@@ -1,6 +1,6 @@
 %define name pyplnet
 %define version 4.3
-%define taglevel 10
+%define taglevel 11
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -50,6 +50,10 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/*
 
 %changelog
+* Sun Sep 25 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - pyplnet-4.3-11
+- turn off verbose/debug messages
+- pyplnet-4.3-10 was broken because of that
+
 * Wed Sep 21 2011 Andy Bavier <acb@cs.princeton.edu> - pyplnet-4.3-10
 - Enable creation of bridged interfaces
 
