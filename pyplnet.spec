@@ -1,6 +1,6 @@
 %define name pyplnet
 %define version 4.3
-%define taglevel 9
+%define taglevel 10
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -50,6 +50,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/*
 
 %changelog
+* Wed Sep 21 2011 Andy Bavier <acb@cs.princeton.edu> - pyplnet-4.3-10
+- Enable creation of bridged interfaces
+
 * Tue Feb 15 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - pyplnet-4.3-9
 - protect shell vars definition in ifcfg files with ""
 - tweaks in numbering rules
