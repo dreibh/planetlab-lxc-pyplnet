@@ -455,8 +455,6 @@ if __name__ == "__main__":
     parser.add_option("-p", "--program", action="store", type="string",
                       dest="program", default="plnet")
     (options, args) = parser.parse_args()
-    options.root = ''
-    options.verbose = True
     if len(args) != 1 or options.root is None:
         print sys.argv
         print >>sys.stderr, "Missing root or node_id"
