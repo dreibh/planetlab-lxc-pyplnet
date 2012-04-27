@@ -110,7 +110,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
 
             for setting in settings:
                 settingname = setting[name_key].upper()
-                if settingname in ('IFNAME','ALIAS','CFGOPTIONS','DRIVER'):
+                if settingname in ('IFNAME','ALIAS','CFGOPTIONS','DRIVER','VLAN'):
                     details[settingname]=setting['value']
                 # IPv6 support on IPv4 interface
                 if settingname in ('IPV6ADDR','IPV6_DEFAULTGW','IPV6ADDR_SECONDARIES'):
