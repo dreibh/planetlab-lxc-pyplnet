@@ -1,6 +1,6 @@
 %define name pyplnet
 %define version 4.3
-%define taglevel 13
+%define taglevel 14
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -50,6 +50,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/*
 
 %changelog
+* Wed May 02 2012 Andy Bavier <acb@cs.princeton.edu> - pyplnet-4.3-14
+- Fix stupid bug
+
 * Mon Apr 30 2012 Andy Bavier <acb@cs.princeton.edu> - pyplnet-4.3-13
 - Support for VLAN interfaces
 
