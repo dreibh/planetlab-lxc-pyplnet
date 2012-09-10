@@ -126,6 +126,10 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
                 # Bridge setting
                 elif settingname in [ 'BRIDGE' ]:
                     details['BRIDGE'] = setting['value']
+                elif settingname in [ 'OVS_BRIDGE' ]:
+                    details['OVS_BRIDGE'] = setting['value']
+                    details['TYPE'] = "OVSPort"
+                    details['DEVICETYPE'] = "ovs"
                 else:
                     logger.log("net:InitInterfaces WARNING: ignored setting named %s"%setting[name_key])
 
@@ -171,6 +175,21 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
             bridgeDetails = prepDetails(interface)
             bridgeDevices.append(bridgeName)
             bridgeDetails['TYPE']   = 'Bridge'
+            devices_map[bridgeName] = bridgeDetails
+        elif 'OVS_BRIDGE' in details and 'IFNAME' in details:
+            # Can probably collapse most of this with previous, just prototyping now...
+            ifname = details['IFNAME']
+            device_id -= 1
+            logger.log('net:InitInterfaces: OVS Bridge detected. Adding %s to devices_map' % ifname)
+            devices_map[ifname] = removeBridgedIfaceDetails(details)
+            bridgeName = details['OVS_BRIDGE']
+
+            logger.log('net:InitInterfaces: Adding bridge %s' % bridgeName)
+            bridgeDetails = prepDetails(interface)
+            bridgeDevices.append(bridgeName)
+            bridgeDetails['TYPE']   = 'OVSBridge'
+            bridgeDetails['DEVICETYPE'] = 'ovs'
+            # Fix up details for DHCP if required
             devices_map[bridgeName] = bridgeDetails
         else:
             if 'IFNAME' in details:
