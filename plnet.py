@@ -163,33 +163,30 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
             else:
                 logger.log("net:InitInterfaces WARNING: interface alias (%s) not matched to an interface"% details['ALIAS'])
             device_id -= 1
-        elif 'BRIDGE' in details and 'IFNAME' in details:
+        elif ('BRIDGE' in details or 'OVS_BRIDGE' in details) and 'IFNAME' in details:
             # The bridge inherits the mac of the first attached interface.
             ifname = details['IFNAME']
             device_id -= 1
-            logger.log('net:InitInterfaces: Bridge detected. Adding %s to devices_map' % ifname)
-            devices_map[ifname] = removeBridgedIfaceDetails(details)
-            bridgeName = details['BRIDGE']
+            if 'BRIDGE' in details:
+                bridgeName = details['BRIDGE']
+                bridgeType = 'Bridge'
+            else:
+                bridgeName = details['OVS_BRIDGE']
+                bridgeType = 'OVSBridge'
 
-            logger.log('net:InitInterfaces: Adding bridge %s' % bridgeName)
+            logger.log('net:InitInterfaces: %s detected. Adding %s to devices_map' % (bridgeType, ifname))
+            devices_map[ifname] = removeBridgedIfaceDetails(details)
+
+            logger.log('net:InitInterfaces: Adding %s %s' % (bridgeType, bridgeName))
             bridgeDetails = prepDetails(interface)
             bridgeDevices.append(bridgeName)
-            bridgeDetails['TYPE']   = 'Bridge'
-            devices_map[bridgeName] = bridgeDetails
-        elif 'OVS_BRIDGE' in details and 'IFNAME' in details:
-            # Can probably collapse most of this with previous, just prototyping now...
-            ifname = details['IFNAME']
-            device_id -= 1
-            logger.log('net:InitInterfaces: OVS Bridge detected. Adding %s to devices_map' % ifname)
-            devices_map[ifname] = removeBridgedIfaceDetails(details)
-            bridgeName = details['OVS_BRIDGE']
-
-            logger.log('net:InitInterfaces: Adding bridge %s' % bridgeName)
-            bridgeDetails = prepDetails(interface)
-            bridgeDevices.append(bridgeName)
-            bridgeDetails['TYPE']   = 'OVSBridge'
-            bridgeDetails['DEVICETYPE'] = 'ovs'
-            # Fix up details for DHCP if required
+            bridgeDetails['TYPE'] = bridgeType
+            if bridgeType == 'OVSBridge':
+                bridgeDetails['DEVICETYPE'] = 'ovs'
+                if bridgeDetails['BOOTPROTO'] == 'dhcp':
+                    del bridgeDetails['BOOTPROTO']
+                    bridgeDetails['OVSBOOTPROTO'] = 'dhcp'
+                    bridgeDetails['OVSDHCPINTERFACES'] = ifname
             devices_map[bridgeName] = bridgeDetails
         else:
             if 'IFNAME' in details:
