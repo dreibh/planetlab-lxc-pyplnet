@@ -1,6 +1,6 @@
 %define name pyplnet
 %define version 4.3
-%define taglevel 14
+%define taglevel 15
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -50,6 +50,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/*
 
 %changelog
+* Wed Oct 24 2012 Andy Bavier <acb@cs.princeton.edu> - pyplnet-4.3-15
+- Add support for bridging using Open vSwitch
+
 * Wed May 02 2012 Andy Bavier <acb@cs.princeton.edu> - pyplnet-4.3-14
 - Fix stupid bug
 
