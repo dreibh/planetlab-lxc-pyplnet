@@ -13,6 +13,20 @@ import modprobe
 global version
 version = 4.3
 
+def ovs_check(logger):
+    """ Return True if openvswitch is running, False otherwise. Try restarting
+        it once.
+    """
+    rc = os.system("service openvswitch status")
+    if rc!=0:
+        logger.log("net: restarting openvswitch")
+        rc = os.system("service openvswitch restart")
+    rc = os.system("service openvswitch status")
+    if rc!=0:
+        logger.log("net: failed to restart openvswitch")
+        return False
+    return True
+
 def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeManager"):
     global version
 
@@ -127,9 +141,14 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
                 elif settingname in [ 'BRIDGE' ]:
                     details['BRIDGE'] = setting['value']
                 elif settingname in [ 'OVS_BRIDGE' ]:
-                    details['OVS_BRIDGE'] = setting['value']
-                    details['TYPE'] = "OVSPort"
-                    details['DEVICETYPE'] = "ovs"
+                    # If openvswitch isn't running, then we'll lose network
+                    # connectivity when we reconfigure eth0.
+                    if ovs_check(logger):
+                        details['OVS_BRIDGE'] = setting['value']
+                        details['TYPE'] = "OVSPort"
+                        details['DEVICETYPE'] = "ovs"
+                    else:
+                        logger.log("net:InitInterfaces ERROR: OVS_BRIDGE specified, yet ovs is not running")
                 else:
                     logger.log("net:InitInterfaces WARNING: ignored setting named %s"%setting[name_key])
 
