@@ -1,6 +1,6 @@
 %define name pyplnet
 %define version 4.3
-%define taglevel 15
+%define taglevel 16
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -50,6 +50,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/*
 
 %changelog
+* Thu Jan 03 2013 Scott Baker <smbaker@gmail.com> - pyplnet-4.3-16
+- verify ovs is running before setting up ovs bridge
+
 * Wed Oct 24 2012 Andy Bavier <acb@cs.princeton.edu> - pyplnet-4.3-15
 - Add support for bridging using Open vSwitch
 
