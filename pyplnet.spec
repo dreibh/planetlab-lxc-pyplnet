@@ -1,6 +1,6 @@
 %define name pyplnet
 %define version 4.3
-%define taglevel 17
+%define taglevel 18
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -50,6 +50,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/*
 
 %changelog
+* Fri Aug 09 2013 Andy Bavier <acb@cs.princeton.edu> - pyplnet-4.3-18
+- IPv6 changes from Thomas Dreibholz
+
 * Fri Aug 09 2013 Andy Bavier <acb@cs.princeton.edu> - pyplnet-4.3-17
 - Added tags for configuring OvS interfaces
 
