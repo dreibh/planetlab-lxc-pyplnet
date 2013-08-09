@@ -6,6 +6,7 @@ import time
 import tempfile
 import errno
 import struct
+import re
 
 import sioc
 import modprobe
@@ -124,10 +125,13 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
 
             for setting in settings:
                 settingname = setting[name_key].upper()
-                if settingname in ('IFNAME','ALIAS','CFGOPTIONS','DRIVER','VLAN','TYPE','DEVICETYPE'):
+                if ((settingname in ('IFNAME','ALIAS','CFGOPTIONS','DRIVER','VLAN','TYPE','DEVICETYPE')) or \
+                    (re.search('^IPADDR[0-9]+$|^NETMASK[0-9]+$', settingname))):
+                    # TD: Added match for secondary IPv4 configuration.
                     details[settingname]=setting['value']
                 # IPv6 support on IPv4 interface
-                elif settingname in ('IPV6ADDR','IPV6_DEFAULTGW','IPV6ADDR_SECONDARIES'):
+                elif settingname in ('IPV6ADDR','IPV6_DEFAULTGW','IPV6ADDR_SECONDARIES', 'IPV6_AUTOCONF'):
+                    # TD: Added IPV6_AUTOCONF.
                     details[settingname]=setting['value']
                     details['IPV6INIT']='yes'
                 # wireless settings
@@ -198,6 +202,31 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
 
             logger.log('net:InitInterfaces: Adding %s %s' % (bridgeType, bridgeName))
             bridgeDetails = prepDetails(interface)
+            
+            # TD: Add configuration for secondary IPv4 and IPv6 addresses to the bridge.
+            if len(interface[interface_tag_ids]) > 0:
+                try:
+                    if version == 4.3:
+                        settings = plc.GetInterfaceTags({interface_tag_id:interface[interface_tag_ids]})
+                    else:
+                        settings = plc.GetNodeNetworkSettings({interface_tag_id:interface[interface_tag_ids]})
+                except:
+                    logger.log("net:InitInterfaces FATAL: failed call GetInterfaceTags({'interface_tag_id':{%s})"% \
+                               interface[interface_tag_ids])
+                    failedToGetSettings = True
+                    continue # on to the next interface
+
+                for setting in settings:
+                    settingname = setting[name_key].upper()
+                    if (re.search('^IPADDR[0-9]+$|^NETMASK[0-9]+$', settingname)):
+                        # TD: Added match for secondary IPv4 configuration.
+                        bridgeDetails[settingname]=setting['value']
+                    # IPv6 support on IPv4 interface
+                    elif settingname in ('IPV6ADDR','IPV6_DEFAULTGW','IPV6ADDR_SECONDARIES', 'IPV6_AUTOCONF'):
+                        # TD: Added IPV6_AUTOCONF.
+                        bridgeDetails[settingname]=setting['value']
+                        bridgeDetails['IPV6INIT']='yes'
+
             bridgeDevices.append(bridgeName)
             bridgeDetails['TYPE'] = bridgeType
             if bridgeType == 'OVSBridge':
@@ -475,10 +504,23 @@ def prepDetails(interface, hostname=''):
 # Remove duplicate entry from the bridged interface's configuration file.
 #
 def removeBridgedIfaceDetails(details):
-    for key in [ 'PRIMARY', 'PERSISTENT_DHCLIENT', 'DHCLIENTARGS', 'DHCP_HOSTNAME',
-                 'BOOTPROTO', 'IPADDR', 'NETMASK', 'GATEWAY', 'DNS1', 'DNS2' ]:
+    # TD: Also added secondary IPv4 keys and IPv6 keys to the keys to be removed.
+    allKeys = [ 'PRIMARY', 'PERSISTENT_DHCLIENT', 'DHCLIENTARGS', 'DHCP_HOSTNAME',
+                'BOOTPROTO', 'IPADDR', 'NETMASK', 'GATEWAY', 'DNS1', 'DNS2',
+                'IPV6ADDR', 'IPV6_DEFAULTGW', 'IPV6ADDR_SECONDARIES',
+                'IPV6_AUTOCONF', 'IPV6INIT' ]
+    for i in range(1, 256):
+       allKeys.append('IPADDR' + str(i))
+       allKeys.append('NETMASK' + str(i))
+
+    for key in allKeys:
         if key in details:
             del details[key]
+
+    # TD: Also turn off IPv6
+    details['IPV6INIT']      = 'no'
+    details['IPV6_AUTOCONF'] = 'no'
+    
     return details
 
 if __name__ == "__main__":
