@@ -19,14 +19,15 @@ def ovs_check(logger):
         it once.
     """
     rc = os.system("service openvswitch status")
-    if rc!=0:
-        logger.log("net: restarting openvswitch")
-        rc = os.system("service openvswitch restart")
+    if rc == 0:
+        return True
+    logger.log("net: restarting openvswitch")
+    rc = os.system("service openvswitch restart")
     rc = os.system("service openvswitch status")
-    if rc!=0:
-        logger.log("net: failed to restart openvswitch")
-        return False
-    return True
+    if rc == 0:
+        return True
+    logger.log("net: failed to restart openvswitch")
+    return False
 
 def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeManager"):
     global version
