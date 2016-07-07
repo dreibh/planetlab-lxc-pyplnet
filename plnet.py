@@ -473,6 +473,8 @@ def prepDetails(interface, hostname=''):
     details = {}
     details['ONBOOT']  = 'yes'
     details['USERCTL'] = 'no'
+    # attempt to work around issues seen starting with f23
+    details['NM_CONTROLLED'] = 'no'
     if interface['mac']:
         details['HWADDR'] = interface['mac']
     if interface['is_primary']:
