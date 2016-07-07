@@ -318,11 +318,10 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
         time.sleep(2)
 
     # Write network configuration file
-    networkconf = file("{}/etc/sysconfig/network".format(root), "w")
-    networkconf.write("NETWORKING=yes\nHOSTNAME={}\n".format(hostname))
-    if gateway is not None:
-        networkconf.write("GATEWAY={}\n".format(gateway))
-    networkconf.close()
+    with open("{}/etc/sysconfig/network".format(root), "w") as networkconf:
+        networkconf.write("NETWORKING=yes\nHOSTNAME={}\n".format(hostname))
+        if gateway is not None:
+            networkconf.write("GATEWAY={}\n".format(gateway))
 
     # Process ifcfg-$dev changes / additions
     newdevs = []
@@ -356,15 +355,13 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
         def comparefiles(a,b):
             try:
                 logger.verbose("net:InitInterfaces comparing {} with {}".format(a, b))
-                if not os.path.exists(a): return False
-                fb = open(a)
-                buf_a = fb.read()
-                fb.close()
+                if not os.path.exists(a) or not os.path.exists(b):
+                    return False
+                with open(a) as fb:
+                    buf_a = fb.read()
 
-                if not os.path.exists(b): return False
-                fb = open(b)
-                buf_b = fb.read()
-                fb.close()
+                with open(b) as fb:
+                    buf_b = fb.read()
 
                 return buf_a == buf_b
             except IOError, e:
@@ -432,19 +429,18 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
 
     for dev in newdevs:
         cfgvariables = {}
-        fb = file("{}/ifcfg-{}".format(sysconfig, dev), "r")
-        for line in fb.readlines():
-            parts = line.split()
-            if parts[0][0]=="#":continue
-            if parts[0].find('='):
-                name,value = parts[0].split('=')
-                # clean up name & value
-                name = name.strip()
-                value = value.strip()
-                value = value.strip("'")
-                value = value.strip('"')
-                cfgvariables[name]=value
-        fb.close()
+        with file("{}/ifcfg-{}".format(sysconfig, dev), "r") as fb:
+            for line in fb.readlines():
+                parts = line.split()
+                if parts[0][0]=="#":continue
+                if parts[0].find('='):
+                    name,value = parts[0].split('=')
+                    # clean up name & value
+                    name = name.strip()
+                    value = value.strip()
+                    value = value.strip("'")
+                    value = value.strip('"')
+                    cfgvariables[name]=value
 
         def getvar(name):
             if name in cfgvariables:
