@@ -1,6 +1,6 @@
 %define name pyplnet
 %define version 4.3
-%define taglevel 18
+%define taglevel 19
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -50,6 +50,10 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/*
 
 %changelog
+* Sun Jul 10 2016 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - pyplnet-4.3-19
+- always set NM_CONTROLLED=no in ifcfg files
+- more modern python
+
 * Fri Aug 09 2013 Andy Bavier <acb@cs.princeton.edu> - pyplnet-4.3-18
 - IPv6 changes from Thomas Dreibholz
 
