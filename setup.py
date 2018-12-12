@@ -6,8 +6,10 @@
 # Copyright (C) 2008 The Trustees of Princeton University
 #
 
+# pylint: disable=c0111, c0103
+
 import os
-from distutils.core import setup, Extension
+from distutils.core import setup
 from distutils.cmd import Command
 from distutils.command.sdist import sdist
 
@@ -37,7 +39,7 @@ class bdist_rpmspec(Command):
         if self.rpmdef is not None:
             command.extend(["--define", self.rpmdef])
         command.append(sdist.get_archive_files()[0])
-        print "running '%s'" % "' '".join(command)
+        print("running '%s'" % "' '".join(command))
         if not self.dry_run:
             os.spawnvp(os.P_WAIT, "rpmbuild", command)
 
@@ -45,9 +47,9 @@ setup(
     name='pyplnet',
     version='4.3',
     py_modules=[
-    'plnet',
-    'modprobe',
-    'sioc',
+        'plnet',
+        'modprobe',
+        'sioc',
     ],
     cmdclass={'sdist': my_sdist, 'bdist_rpmspec': bdist_rpmspec},
-    )
+)

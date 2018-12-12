@@ -35,13 +35,13 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
     sysconfig = "{}/etc/sysconfig/network-scripts".format(root)
     try:
         os.makedirs(sysconfig)
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise e
 
     # query running network interfaces
     devs = sioc.gifconf()
-    ips = dict(zip(devs.values(), devs.keys()))
+    ips = dict(list(zip(list(devs.values()), list(devs.keys()))))
     macs = {}
     for dev in devs:
         macs[sioc.gifhwaddr(dev).lower()] = dev
@@ -62,7 +62,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
     # returned.  Because 'interface' is decremented as each interface is processed,
     # by the time is_primary=True (primary) interface is reached, the device
     # "eth<interface>" is not eth0.  But, something like eth-4, or eth-12.
-    # This code sorts the interfaces, placing is_primary=True interfaces first.  
+    # This code sorts the interfaces, placing is_primary=True interfaces first.
     # There is a lot of room for improvement to how this
     # script handles interfaces and how it chooses the primary interface.
     def compare_by (fieldname):
@@ -85,7 +85,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
         # Get interface name preferably from MAC address, falling back
         # on IP address.
         hwaddr=interface['mac']
-        if hwaddr <> None: hwaddr=hwaddr.lower()
+        if hwaddr != None: hwaddr=hwaddr.lower()
         if hwaddr in macs:
             orig_ifname = macs[hwaddr]
         elif interface['ip'] in ips:
@@ -139,7 +139,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
                 # wireless settings
                 elif settingname in \
                         [  "MODE", "ESSID", "NW", "FREQ", "CHANNEL", "SENS", "RATE",
-                           "KEY", "KEY1", "KEY2", "KEY3", "KEY4", "SECURITYMODE", 
+                           "KEY", "KEY1", "KEY2", "KEY3", "KEY4", "SECURITYMODE",
                            "IWCONFIG", "IWPRIV" ] :
                     details [settingname] = setting['value']
                     details ['TYPE']='Wireless'
@@ -166,7 +166,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
                 del details['HWADDR']
                 if hwaddr in macs:
                     hwifname = macs[hwaddr]
-                    if ('IFNAME' in details) and details['IFNAME'] <> hwifname:
+                    if ('IFNAME' in details) and details['IFNAME'] != hwifname:
                         logger.log("net:InitInterfaces WARNING: alias ifname ({}) and hwaddr ifname ({}) do not match"
                                    .format(details['IFNAME'], hwifname))
                         details['IFNAME'] = hwifname
@@ -183,7 +183,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
                     isValid=isValid and part.isalnum()
 
                 if isValid:
-                    devices_map["{}:{}".format(details['IFNAME'], details['ALIAS'])] = details 
+                    devices_map["{}:{}".format(details['IFNAME'], details['ALIAS'])] = details
                 else:
                     logger.log("net:InitInterfaces WARNING: interface alias ({}) not a valid string for RH ifup-aliases"
                                .format(details['ALIAS']))
@@ -208,7 +208,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
 
             logger.log('net:InitInterfaces: Adding {} {}'.format(bridgeType, bridgeName))
             bridgeDetails = prepDetails(interface)
-            
+
             # TD: Add configuration for secondary IPv4 and IPv6 addresses to the bridge.
             if len(interface[interface_tag_ids]) > 0:
                 filter = { interface_tag_id : interface[interface_tag_ids] }
@@ -260,22 +260,22 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
                     logger.log("net:InitInterfaces WARNING: possibly blowing away {} configuration"
                                .format(ifname))
             devices_map[ifname] = details
-        device_id += 1 
+        device_id += 1
     logger.log('net:InitInterfaces: Device map: {}'.format(devices_map))
     m = modprobe.Modprobe()
     try:
         m.input("{}/etc/modprobe.conf".format(root))
     except:
         pass
-    for (dev, details) in devices_map.iteritems():
+    for (dev, details) in devices_map.items():
         # get the driver string "moduleName option1=a option2=b"
         driver=details.get('DRIVER','')
-        if driver <> '':
+        if driver != '':
             driver=driver.split()
             kernelmodule=driver[0]
             m.aliasset(dev,kernelmodule)
             options=" ".join(driver[1:])
-            if options <> '':
+            if options != '':
                 m.optionsset(dev,options)
     m.output("{}/etc/modprobe.conf".format(root), program)
 
@@ -296,11 +296,11 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
     if lo in ifcfgs: ifcfgs.remove(lo)
 
     # remove known devices from ifcfgs list
-    for (dev, details) in devices_map.iteritems():
+    for (dev, details) in devices_map.items():
         ifcfg = 'ifcfg-'+dev
         if ifcfg in ifcfgs: ifcfgs.remove(ifcfg)
 
-    # delete the remaining ifcfgs from 
+    # delete the remaining ifcfgs from
     deletedSomething = False
 
     if not failedToGetSettings:
@@ -326,16 +326,16 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
     # Process ifcfg-$dev changes / additions
     newdevs = []
     table = 10
-    for (dev, details) in devices_map.iteritems():
+    for (dev, details) in devices_map.items():
         (fd, tmpnam) = tempfile.mkstemp(dir=sysconfig)
         f = os.fdopen(fd, "w")
         f.write("# Autogenerated by pyplnet... do not edit!\n")
         if 'DRIVER' in details:
             f.write("# using {} driver for device {}\n".format(details['DRIVER'], dev))
         f.write('DEVICE={}\n'.format(dev))
-        
+
         # print the configuration values
-        for (key, val) in details.iteritems():
+        for (key, val) in details.items():
             if key not in ('IFNAME','ALIAS','CFGOPTIONS','DRIVER','GATEWAY'):
                 f.write('{}="{}"\n'.format(key, val))
 
@@ -364,7 +364,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
                     buf_b = fb.read()
 
                 return buf_a == buf_b
-            except IOError, e:
+            except IOError as e:
                 return False
 
         src_route_changed = False
@@ -377,7 +377,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
             rule_dest = "{}/rule-{}".format(sysconfig, dev)
             if not comparefiles(rule_tmpnam, rule_dest):
                 os.rename(rule_tmpnam, rule_dest)
-                os.chmod(rule_dest, 0644)
+                os.chmod(rule_dest, 0o644)
                 src_route_changed = True
             else:
                 os.unlink(rule_tmpnam)
@@ -396,7 +396,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
             route_dest = "{}/route-{}".format(sysconfig, dev)
             if not comparefiles(route_tmpnam, route_dest):
                 os.rename(route_tmpnam, route_dest)
-                os.chmod(route_dest, 0644)
+                os.chmod(route_dest, 0o644)
                 src_route_changed = True
             else:
                 os.unlink(route_tmpnam)
@@ -406,9 +406,9 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
             logger.verbose('net:InitInterfaces adding configuration for {}'.format(dev))
             # add ifcfg-$dev configuration file
             os.rename(tmpnam,path)
-            os.chmod(path,0644)
+            os.chmod(path,0o644)
             newdevs.append(dev)
-            
+
         elif not comparefiles(tmpnam,path) or src_route_changed:
             logger.verbose('net:InitInterfaces Configuration change for {}'.format(dev))
             if not files_only:
@@ -421,7 +421,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
             logger.log('replacing configuration for {}'.format(dev))
             # replace ifcfg-$dev configuration file
             os.rename(tmpnam,path)
-            os.chmod(path,0644)
+            os.chmod(path,0o644)
             newdevs.append(dev)
         else:
             # tmpnam & path are identical
@@ -526,7 +526,7 @@ def removeBridgedIfaceDetails(details):
     # TD: Also turn off IPv6
     details['IPV6INIT']      = 'no'
     details['IPV6_AUTOCONF'] = 'no'
-    
+
     return details
 
 if __name__ == "__main__":
@@ -543,8 +543,8 @@ if __name__ == "__main__":
                       dest="program", default="plnet")
     (options, args) = parser.parse_args()
     if len(args) != 1 or options.root is None:
-        print sys.argv
-        print >>sys.stderr, "Missing root or node_id"
+        print(sys.argv)
+        print("Missing root or node_id", file=sys.stderr)
         parser.print_help()
         sys.exit(1)
 
@@ -562,7 +562,7 @@ if __name__ == "__main__":
             self.verbosity = verbose
         def log(self, msg, loglevel=2):
             if self.verbosity:
-                print msg
+                print(msg)
         def verbose(self, msg):
             self.log(msg, 1)
     l = logger(options.verbose)

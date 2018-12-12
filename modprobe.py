@@ -72,8 +72,8 @@ class Modprobe:
                 command = parts[0].lower()
 
                 # check if its a command we support
-                if not self.conffile.has_key(command):
-                    print "WARNING: command %s not recognized." % command
+                if command not in self.conffile:
+                    print("WARNING: command %s not recognized." % command)
                     continue
 
                 func = funcs.get(command,__default)
@@ -118,7 +118,7 @@ class Modprobe:
             fb.close()
 
             return buf_a == buf_b
-        except IOError, e:
+        except IOError as e:
             return False
 
     def output(self,filename="/etc/modprobe.conf",program="NodeManager"):
@@ -128,7 +128,7 @@ class Modprobe:
 
         for command in ("alias","options","install","remove","blacklist"):
             table = self.conffile[command]
-            keys = table.keys()
+            keys = list(table.keys())
             keys.sort()
             for k in keys:
                 v = table[k]
@@ -137,7 +137,7 @@ class Modprobe:
         fb.close()
         if not self._comparefiles(tmpnam,filename):
             os.rename(tmpnam,filename)
-            os.chmod(filename,0644)
+            os.chmod(filename,0o644)
             return True
         else:
             os.unlink(tmpnam)
