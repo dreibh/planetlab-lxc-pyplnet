@@ -4,8 +4,6 @@
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
-%{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-
 Summary: PlanetLab Network Configuration library
 Name: %{name}
 Version: %{version}
@@ -20,8 +18,8 @@ Packager: PlanetLab Central <support@planet-lab.org>
 Distribution: PlanetLab %{plrelease}
 URL: %{SCMURL}
 
-Requires: python >= 2.4
-BuildRequires: python, python-devel
+Requires: python3
+BuildRequires: python3, python3-devel
 BuildArch: noarch
 
 %description
@@ -32,14 +30,14 @@ configuration data recorded at PLC.
 %setup -q
 
 %build
-python setup.py build
+python3 setup.py build
 
 %install
 rm -rf $RPM_BUILD_ROOT
-python setup.py install --skip-build --root "$RPM_BUILD_ROOT"
-chmod +x $RPM_BUILD_ROOT/%{python_sitelib}/plnet.py
+python3 setup.py install --skip-build --root "$RPM_BUILD_ROOT"
+chmod +x $RPM_BUILD_ROOT/%{python3_sitelib}/plnet.py
 mkdir -p $RPM_BUILD_ROOT/%{_bindir}
-ln -s %{python_sitelib}/plnet.py $RPM_BUILD_ROOT/%{_bindir}/plnet
+ln -s %{python3_sitelib}/plnet.py $RPM_BUILD_ROOT/%{_bindir}/plnet
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -47,7 +45,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %{_bindir}/plnet
-%{python_sitelib}/*
+%{python3_sitelib}/*
 
 %changelog
 * Sun Jul 10 2016 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - pyplnet-4.3-19
