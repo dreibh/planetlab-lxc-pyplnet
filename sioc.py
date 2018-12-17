@@ -20,6 +20,9 @@ def _format_ip(nip):
                             (ip & 0x000000ff))
 
 def gifaddr(interface):
+    # for python3
+    if isinstance(interface, str):
+        interface = str.encode()
     s = None
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
@@ -34,20 +37,24 @@ def gifaddr(interface):
 
 def gifconf():
     ret = {}
-    ip = subprocess.Popen(["/sbin/ip", "-4", "addr", "ls"],
+    ip = subprocess.Popen(["/sbin/ip", "-4", "addr", "show"],
                           stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE, close_fds=True)
+                          stderr=subprocess.PIPE, close_fds=True,
+                          universal_newlines=True)
     (stdout, stderr) = ip.communicate()
     # no wait is needed when using communicate
     for line in stdout.split("\n"):
         fields = [ field.strip() for field in line.split() ]
         if fields and fields[0] == "inet":
             # fields[-1] is the last column in fields, which has the interface name
-            # fields[1] has the IP address / netmask width 
+            # fields[1] has the IP address / netmask width
             ret[fields[-1]] = fields[1].split("/")[0]
     return ret
 
 def gifhwaddr(interface):
+    # for python3
+    if isinstance(interface, str):
+        interface = str.encode()
     s = None
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
