@@ -11,9 +11,6 @@ import re
 import sioc
 import modprobe
 
-global version
-version = 4.3
-
 def ovs_check(logger):
     """ Return True if openvswitch is running, False otherwise. Try restarting
         it once.
@@ -31,7 +28,6 @@ def ovs_check(logger):
 
 def InitInterfaces(logger, plc, data, root="",
                    files_only=False, program="NodeManager"):
-    global version
 
     sysconfig = "{}/etc/sysconfig/network-scripts".format(root)
     try:
@@ -52,15 +48,11 @@ def InitInterfaces(logger, plc, data, root="",
     hostname = data.get('hostname', socket.gethostname())
     gateway = None
     # assume data['interfaces'] contains this node's Interfaces
-    # can cope with 4.3 ('networks') or 5.0 ('interfaces')
-    try:
-        interfaces = data['interfaces']
-    except:
-        interfaces = data['networks']
+    interfaces = data['interfaces']
     failedToGetSettings = False
 
-    # NOTE: GetInterfaces/NodeNetworks does not necessarily order the interfaces
-    # returned.  Because 'interface' is decremented as each interface is processed,
+    # NOTE: GetInterfaces does not necessarily order the interfaces returned.
+    # Because 'interface' is decremented as each interface is processed,
     # by the time is_primary=True (primary) interface is reached, the device
     # "eth<interface>" is not eth0.  But, something like eth-4, or eth-12.
     # This code sorts the interfaces, placing is_primary=True interfaces first.
@@ -79,8 +71,9 @@ def InitInterfaces(logger, plc, data, root="",
         logger.verbose('net:InitInterfaces ips = {}'.format(ips))
         # Get interface name preferably from MAC address, falling back
         # on IP address.
-        hwaddr=interface['mac']
-        if hwaddr != None: hwaddr=hwaddr.lower()
+        hwaddr = interface['mac']
+        if hwaddr != None:
+            hwaddr = hwaddr.lower()
         if hwaddr in macs:
             orig_ifname = macs[hwaddr]
         elif interface['ip'] in ips:
@@ -97,23 +90,14 @@ def InitInterfaces(logger, plc, data, root="",
             gateway = interface['gateway']
 
         if 'interface_tag_ids' in interface:
-            version = 4.3
             interface_tag_ids = "interface_tag_ids"
             interface_tag_id = "interface_tag_id"
             name_key = "tagname"
-        else:
-            version = 4.2
-            interface_tag_ids = "nodenetwork_setting_ids"
-            interface_tag_id = "nodenetwork_setting_id"
-            name_key = "name"
 
-        if len(interface[interface_tag_ids]) > 0:
+        if interface[interface_tag_ids]:
             try:
-                filter = { interface_tag_id : interface[interface_tag_ids] }
-                if version == 4.3:
-                    settings = plc.GetInterfaceTags(filter)
-                else:
-                    settings = plc.GetNodeNetworkSettings(filter)
+                filter = {interface_tag_id : interface[interface_tag_ids]}
+                settings = plc.GetInterfaceTags(filter)
             except:
                 logger.log("net:InitInterfaces FATAL: failed call GetInterfaceTags({})"
                            .format(filter))
@@ -122,26 +106,28 @@ def InitInterfaces(logger, plc, data, root="",
 
             for setting in settings:
                 settingname = setting[name_key].upper()
-                if ((settingname in ('IFNAME','ALIAS','CFGOPTIONS','DRIVER','VLAN','TYPE','DEVICETYPE')) or \
-                    (re.search('^IPADDR[0-9]+$|^NETMASK[0-9]+$', settingname))):
+                if ((settingname in ('IFNAME', 'ALIAS', 'CFGOPTIONS', 'DRIVER',
+                                     'VLAN','TYPE','DEVICETYPE')) or
+                        (re.search('^IPADDR[0-9]+$|^NETMASK[0-9]+$', settingname))):
                     # TD: Added match for secondary IPv4 configuration.
-                    details[settingname]=setting['value']
+                    details[settingname] = setting['value']
                 # IPv6 support on IPv4 interface
-                elif settingname in ('IPV6ADDR','IPV6_DEFAULTGW','IPV6ADDR_SECONDARIES', 'IPV6_AUTOCONF'):
+                elif settingname in ('IPV6ADDR', 'IPV6_DEFAULTGW',
+                                     'IPV6ADDR_SECONDARIES', 'IPV6_AUTOCONF'):
                     # TD: Added IPV6_AUTOCONF.
-                    details[settingname]=setting['value']
-                    details['IPV6INIT']='yes'
+                    details[settingname] = setting['value']
+                    details['IPV6INIT'] = 'yes'
                 # wireless settings
                 elif settingname in \
-                        [  "MODE", "ESSID", "NW", "FREQ", "CHANNEL", "SENS", "RATE",
-                           "KEY", "KEY1", "KEY2", "KEY3", "KEY4", "SECURITYMODE",
-                           "IWCONFIG", "IWPRIV" ] :
+                        ("MODE", "ESSID", "NW", "FREQ", "CHANNEL", "SENS",
+                         "RATE", "KEY", "KEY1", "KEY2", "KEY3", "KEY4",
+                         "SECURITYMODE", "IWCONFIG", "IWPRIV") :
                     details [settingname] = setting['value']
-                    details ['TYPE']='Wireless'
+                    details ['TYPE'] = 'Wireless'
                 # Bridge setting
-                elif settingname in [ 'BRIDGE' ]:
+                elif settingname in ('BRIDGE',):
                     details['BRIDGE'] = setting['value']
-                elif settingname in [ 'OVS_BRIDGE' ]:
+                elif settingname in ('OVS_BRIDGE',):
                     # If openvswitch isn't running, then we'll lose network
                     # connectivity when we reconfigure eth0.
                     if ovs_check(logger):
@@ -149,7 +135,8 @@ def InitInterfaces(logger, plc, data, root="",
                         details['TYPE'] = "OVSPort"
                         details['DEVICETYPE'] = "ovs"
                     else:
-                        logger.log("net:InitInterfaces ERROR: OVS_BRIDGE specified, yet ovs is not running")
+                        logger.log("net:InitInterfaces ERROR: OVS_BRIDGE specified, "
+                                   "yet ovs is not running")
                 else:
                     logger.log("net:InitInterfaces WARNING: ignored setting named {}"
                                .format(setting[name_key]))
@@ -180,10 +167,12 @@ def InitInterfaces(logger, plc, data, root="",
                 if isValid:
                     devices_map["{}:{}".format(details['IFNAME'], details['ALIAS'])] = details
                 else:
-                    logger.log("net:InitInterfaces WARNING: interface alias ({}) not a valid string for RH ifup-aliases"
+                    logger.log("net:InitInterfaces WARNING: interface alias ({}) "
+                               "is not a valid string for RH ifup-aliases"
                                .format(details['ALIAS']))
             else:
-                logger.log("net:InitInterfaces WARNING: interface alias ({}) not matched to an interface"
+                logger.log("net:InitInterfaces WARNING: interface alias ({}) "
+                           " not matched to an interface"
                            .format(details['ALIAS']))
             device_id -= 1
         elif ('BRIDGE' in details or 'OVS_BRIDGE' in details) and 'IFNAME' in details:
@@ -205,13 +194,10 @@ def InitInterfaces(logger, plc, data, root="",
             bridgeDetails = prepDetails(interface)
 
             # TD: Add configuration for secondary IPv4 and IPv6 addresses to the bridge.
-            if len(interface[interface_tag_ids]) > 0:
-                filter = { interface_tag_id : interface[interface_tag_ids] }
+            if interface[interface_tag_ids]:
+                filter = {interface_tag_id : interface[interface_tag_ids]}
                 try:
-                    if version == 4.3:
-                        settings = plc.GetInterfaceTags(filter)
-                    else:
-                        settings = plc.GetNodeNetworkSettings(filter)
+                    settings = plc.GetInterfaceTags(filter)
                 except:
                     logger.log("net:InitInterfaces FATAL: failed call GetInterfaceTags({})"
                                .format(filter))
@@ -224,10 +210,11 @@ def InitInterfaces(logger, plc, data, root="",
                         # TD: Added match for secondary IPv4 configuration.
                         bridgeDetails[settingname]=setting['value']
                     # IPv6 support on IPv4 interface
-                    elif settingname in ('IPV6ADDR','IPV6_DEFAULTGW','IPV6ADDR_SECONDARIES', 'IPV6_AUTOCONF'):
+                    elif settingname in ('IPV6ADDR', 'IPV6_DEFAULTGW',
+                                         'IPV6ADDR_SECONDARIES', 'IPV6_AUTOCONF'):
                         # TD: Added IPV6_AUTOCONF.
-                        bridgeDetails[settingname]=setting['value']
-                        bridgeDetails['IPV6INIT']='yes'
+                        bridgeDetails[settingname] = setting['value']
+                        bridgeDetails['IPV6INIT'] = 'yes'
 
             bridgeDevices.append(bridgeName)
             bridgeDetails['TYPE'] = bridgeType
@@ -247,7 +234,7 @@ def InitInterfaces(logger, plc, data, root="",
                 device_id -= 1
             else:
                 while True:
-                    ifname="eth{}".format(device_id - 1)
+                    ifname = "eth{}".format(device_id - 1)
                     if ifname not in devices_map:
                         break
                     device_id += 1
@@ -264,14 +251,14 @@ def InitInterfaces(logger, plc, data, root="",
         pass
     for (dev, details) in devices_map.items():
         # get the driver string "moduleName option1=a option2=b"
-        driver=details.get('DRIVER','')
+        driver = details.get('DRIVER', '')
         if driver != '':
-            driver=driver.split()
-            kernelmodule=driver[0]
-            m.aliasset(dev,kernelmodule)
-            options=" ".join(driver[1:])
+            driver = driver.split()
+            kernelmodule = driver[0]
+            m.aliasset(dev, kernelmodule)
+            options = " ".join(driver[1:])
             if options != '':
-                m.optionsset(dev,options)
+                m.optionsset(dev, options)
     m.output("{}/etc/modprobe.conf".format(root), program)
 
     # clean up after any ifcfg-$dev script that's no longer listed as
@@ -288,12 +275,14 @@ def InitInterfaces(logger, plc, data, root="",
 
     # remove loopback (lo) from ifcfgs list
     lo = "ifcfg-lo"
-    if lo in ifcfgs: ifcfgs.remove(lo)
+    if lo in ifcfgs:
+        ifcfgs.remove(lo)
 
     # remove known devices from ifcfgs list
     for (dev, details) in devices_map.items():
         ifcfg = 'ifcfg-'+dev
-        if ifcfg in ifcfgs: ifcfgs.remove(ifcfg)
+        if ifcfg in ifcfgs:
+            ifcfgs.remove(ifcfg)
 
     # delete the remaining ifcfgs from
     deletedSomething = False
@@ -331,7 +320,7 @@ def InitInterfaces(logger, plc, data, root="",
 
         # print the configuration values
         for (key, val) in details.items():
-            if key not in ('IFNAME','ALIAS','CFGOPTIONS','DRIVER','GATEWAY'):
+            if key not in ('IFNAME', 'ALIAS', 'CFGOPTIONS', 'DRIVER', 'GATEWAY'):
                 f.write('{}="{}"\n'.format(key, val))
 
         # print the configuration specific option values (if any)
@@ -415,8 +404,8 @@ def InitInterfaces(logger, plc, data, root="",
 
             logger.log('replacing configuration for {}'.format(dev))
             # replace ifcfg-$dev configuration file
-            os.rename(tmpnam,path)
-            os.chmod(path,0o644)
+            os.rename(tmpnam, path)
+            os.chmod(path, 0o644)
             newdevs.append(dev)
         else:
             # tmpnam & path are identical
@@ -427,19 +416,20 @@ def InitInterfaces(logger, plc, data, root="",
         with open("{}/ifcfg-{}".format(sysconfig, dev), "r") as fb:
             for line in fb.readlines():
                 parts = line.split()
-                if parts[0][0]=="#":continue
+                if parts[0][0] == "#":
+                    continue
                 if parts[0].find('='):
-                    name,value = parts[0].split('=')
+                    name, value = parts[0].split('=')
                     # clean up name & value
                     name = name.strip()
                     value = value.strip()
                     value = value.strip("'")
                     value = value.strip('"')
-                    cfgvariables[name]=value
+                    cfgvariables[name] = value
 
         def getvar(name):
             if name in cfgvariables:
-                value=cfgvariables[name]
+                value = cfgvariables[name]
                 value = value.lower()
                 return value
             return ''
@@ -545,11 +535,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     node = shell.GetNodes({'node_id': [int(args[0])]})
-    try:
-        interfaces = shell.GetInterfaces({'interface_id': node[0]['interface_ids']})
-    except AttributeError:
-        interfaces = shell.GetNodeNetworks({'nodenetwork_id':node[0]['nodenetwork_ids']})
-        version = 4.2
+    interfaces = shell.GetInterfaces({'interface_id': node[0]['interface_ids']})
 
 
     data = {'hostname': node[0]['hostname'], 'interfaces': interfaces}
