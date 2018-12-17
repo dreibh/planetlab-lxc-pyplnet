@@ -1,4 +1,4 @@
-#!/usr/bin/python /usr/bin/plcsh
+#!/usr/bin/python3 /usr/bin/plcsh
 
 import os
 import socket
