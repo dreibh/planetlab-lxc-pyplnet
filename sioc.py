@@ -22,7 +22,7 @@ def _format_ip(nip):
 def gifaddr(interface):
     # for python3
     if isinstance(interface, str):
-        interface = str.encode()
+        interface = interface.encode()
     s = None
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
@@ -54,7 +54,7 @@ def gifconf():
 def gifhwaddr(interface):
     # for python3
     if isinstance(interface, str):
-        interface = str.encode()
+        interface = interface.encode()
     s = None
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)

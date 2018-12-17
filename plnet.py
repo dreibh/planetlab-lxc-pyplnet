@@ -29,7 +29,8 @@ def ovs_check(logger):
     logger.log("net: failed to restart openvswitch")
     return False
 
-def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeManager"):
+def InitInterfaces(logger, plc, data, root="",
+                   files_only=False, program="NodeManager"):
     global version
 
     sysconfig = "{}/etc/sysconfig/network-scripts".format(root)
@@ -41,14 +42,14 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
 
     # query running network interfaces
     devs = sioc.gifconf()
-    ips = dict(list(zip(list(devs.values()), list(devs.keys()))))
+    ips = {ip: interface for (ip, interface) in devs.items()}
     macs = {}
     for dev in devs:
         macs[sioc.gifhwaddr(dev).lower()] = dev
 
     devices_map = {}
     device_id = 1
-    hostname = data.get('hostname',socket.gethostname())
+    hostname = data.get('hostname', socket.gethostname())
     gateway = None
     # assume data['interfaces'] contains this node's Interfaces
     # can cope with 4.3 ('networks') or 5.0 ('interfaces')
@@ -65,15 +66,9 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
     # This code sorts the interfaces, placing is_primary=True interfaces first.
     # There is a lot of room for improvement to how this
     # script handles interfaces and how it chooses the primary interface.
-    def compare_by (fieldname):
-        def compare_two_dicts (a, b):
-            return cmp(a[fieldname], b[fieldname])
-        return compare_two_dicts
-
     # NOTE: by sorting on 'is_primary' and then reversing (since False is sorted
     # before True) all 'is_primary' interfaces are at the beginning of the list.
-    interfaces.sort( compare_by('is_primary') )
-    interfaces.reverse()
+    interfaces.sort(key=lambda d: d['is_primary'], reverse=True)
 
     # The names of the bridge devices
     bridgeDevices = []
@@ -429,7 +424,7 @@ def InitInterfaces(logger, plc, data, root="", files_only=False, program="NodeMa
 
     for dev in newdevs:
         cfgvariables = {}
-        with file("{}/ifcfg-{}".format(sysconfig, dev), "r") as fb:
+        with open("{}/ifcfg-{}".format(sysconfig, dev), "r") as fb:
             for line in fb.readlines():
                 parts = line.split()
                 if parts[0][0]=="#":continue
