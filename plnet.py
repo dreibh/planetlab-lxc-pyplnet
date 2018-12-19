@@ -529,8 +529,6 @@ if __name__ == "__main__":
                       dest="program", default="plnet")
     (options, args) = parser.parse_args()
     if len(args) != 1 or options.root is None:
-        print(sys.argv)
-        print("Missing root or node_id", file=sys.stderr)
         parser.print_help()
         sys.exit(1)
 
