@@ -1,5 +1,7 @@
 #!/usr/bin/python3 /usr/bin/plcsh
 
+# pylint: disable=c0111, c0103, r0912, r0913, r0914, r0915
+
 import os
 import socket
 import time
@@ -15,13 +17,13 @@ def ovs_check(logger):
     """ Return True if openvswitch is running, False otherwise. Try restarting
         it once.
     """
-    rc = os.system("service openvswitch status")
-    if rc == 0:
+    retcod = os.system("service openvswitch status")
+    if retcod == 0:
         return True
     logger.log("net: restarting openvswitch")
-    rc = os.system("service openvswitch restart")
-    rc = os.system("service openvswitch status")
-    if rc == 0:
+    retcod = os.system("service openvswitch restart")
+    retcod = os.system("service openvswitch status")
+    if retcod == 0:
         return True
     logger.log("net: failed to restart openvswitch")
     return False
@@ -72,7 +74,7 @@ def InitInterfaces(logger, plc, data, root="",
         # Get interface name preferably from MAC address, falling back
         # on IP address.
         hwaddr = interface['mac']
-        if hwaddr != None:
+        if hwaddr is not None:
             hwaddr = hwaddr.lower()
         if hwaddr in macs:
             orig_ifname = macs[hwaddr]
@@ -95,20 +97,20 @@ def InitInterfaces(logger, plc, data, root="",
             name_key = "tagname"
 
         if interface[interface_tag_ids]:
+            filter = {interface_tag_id : interface[interface_tag_ids]}
             try:
-                filter = {interface_tag_id : interface[interface_tag_ids]}
                 settings = plc.GetInterfaceTags(filter)
-            except:
-                logger.log("net:InitInterfaces FATAL: failed call GetInterfaceTags({})"
-                           .format(filter))
+            except Exception:
+                logger.log("net:InitInterfaces FATAL: failed call "
+                           "GetInterfaceTags({})".format(filter))
                 failedToGetSettings = True
                 continue # on to the next interface
 
             for setting in settings:
                 settingname = setting[name_key].upper()
-                if ((settingname in ('IFNAME', 'ALIAS', 'CFGOPTIONS', 'DRIVER',
-                                     'VLAN','TYPE','DEVICETYPE')) or
-                        (re.search('^IPADDR[0-9]+$|^NETMASK[0-9]+$', settingname))):
+                if (settingname in ('IFNAME', 'ALIAS', 'CFGOPTIONS', 'DRIVER',
+                                    'VLAN', 'TYPE', 'DEVICETYPE') or
+                        re.search('^IPADDR[0-9]+$|^NETMASK[0-9]+$', settingname)):
                     # TD: Added match for secondary IPv4 configuration.
                     details[settingname] = setting['value']
                 # IPv6 support on IPv4 interface
@@ -121,9 +123,9 @@ def InitInterfaces(logger, plc, data, root="",
                 elif settingname in \
                         ("MODE", "ESSID", "NW", "FREQ", "CHANNEL", "SENS",
                          "RATE", "KEY", "KEY1", "KEY2", "KEY3", "KEY4",
-                         "SECURITYMODE", "IWCONFIG", "IWPRIV") :
-                    details [settingname] = setting['value']
-                    details ['TYPE'] = 'Wireless'
+                         "SECURITYMODE", "IWCONFIG", "IWPRIV"):
+                    details[settingname] = setting['value']
+                    details['TYPE'] = 'Wireless'
                 # Bridge setting
                 elif settingname in ('BRIDGE',):
                     details['BRIDGE'] = setting['value']
@@ -268,7 +270,7 @@ def InitInterfaces(logger, plc, data, root="",
     files = os.listdir(sysconfig)
 
     # filter out the ifcfg-* files
-    ifcfgs=[]
+    ifcfgs = []
     for f in files:
         if f.find("ifcfg-") == 0:
             ifcfgs.append(f)
@@ -515,18 +517,24 @@ def removeBridgedIfaceDetails(details):
 
     return details
 
-if __name__ == "__main__":
+def main():
     import optparse
     import sys
 
-    parser = optparse.OptionParser(usage="plnet [-v] [-f] [-p <program>] -r root node_id")
-    parser.add_option("-v", "--verbose", action="store_true", dest="verbose")
-    parser.add_option("-r", "--root", action="store", type="string",
-                      dest="root", default=None)
-    parser.add_option("-f", "--files-only", action="store_true",
-                      dest="files_only")
-    parser.add_option("-p", "--program", action="store", type="string",
-                      dest="program", default="plnet")
+    usage = "plnet [-v] [-f] [-p <program>] -r root node_id"
+
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option(
+        "-r", "--root", action="store", type="string",
+        dest="root", default=None)
+    parser.add_option(
+        "-v", "--verbose", action="store_true", dest="verbose")
+    parser.add_option(
+        "-f", "--files-only", action="store_true",
+        dest="files_only")
+    parser.add_option(
+        "-p", "--program", action="store", type="string",
+        dest="program", default="plnet")
     (options, args) = parser.parse_args()
     if len(args) != 1 or options.root is None:
         parser.print_help()
@@ -547,3 +555,6 @@ if __name__ == "__main__":
             self.log(msg, 1)
     l = logger(options.verbose)
     InitInterfaces(l, shell, data, options.root, options.files_only)
+
+if __name__ == "__main__":
+    main()
