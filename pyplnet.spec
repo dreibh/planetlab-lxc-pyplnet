@@ -1,6 +1,6 @@
 %define name pyplnet
-%define version 4.3
-%define taglevel 19
+%define version 7.0
+%define taglevel 0
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -48,6 +48,11 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitelib}/*
 
 %changelog
+* Mon Jan 07 2019 Thierry Parmentelat <thierry.parmentelat@inria.fr> - pyplnet-7.0-0
+- based on python3
+- remove 'NM_CONTROLLED=no' from ifcfg file, as we now rely on NetworkManager
+- cleaned up old code related to 'nodenetworks', oly use 'interfaces' instead
+
 * Sun Jul 10 2016 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - pyplnet-4.3-19
 - always set NM_CONTROLLED=no in ifcfg files
 - more modern python
